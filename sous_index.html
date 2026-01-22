@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasstube</title>
+    <style>
+        /* --- STYLE STYLE SOMBRE (Dark Mode) --- */
+        body { margin: 0; background-color: #0f0f0f; color: white; font-family: sans-serif; padding-bottom: 60px; }
+        
+        /* Navbar */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #202020; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .logo { color: #ff0000; font-weight: bold; font-size: 1.2rem; }
+        
+        /* Login */
+        #auth-box { display: flex; gap: 5px; }
+        input { background: #121212; border: 1px solid #444; color: white; padding: 5px; border-radius: 4px; }
+        button { background: #cc0000; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        
+        /* Feed / Liste */
+        #feed { max-width: 600px; margin: 0 auto; padding: 10px; }
+        .card { background: #1e1e1e; margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 1px solid #333; }
+        .video-player { width: 100%; aspect-ratio: 16/9; background: black; display: block; }
+        .card-body { padding: 12px; }
+        .card-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+        .card-meta { color: #aaa; font-size: 0.9rem; display: flex; justify-content: space-between; }
+        .author-badge { background: #333; padding: 2px 6px; border-radius: 4px; color: #fff; font-size: 0.8rem; }
+
+        /* Upload Flottant */
+        .fab { position: fixed; bottom: 20px; right: 20px; background: #ff0000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        /* Modal Upload */
+        #upload-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; }
+        .modal-content { background: #202020; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
+        .modal-content input { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Rasstube</div>
+        <div id="auth-box">
+            <input type="text" id="username" placeholder="Pseudo...">
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="user-info" style="display:none;">
+            <span id="display-name" style="margin-right:10px; color:#aaa;"></span>
+        </div>
+    </header>
+
+    <div id="feed">Chargement...</div>
+
+    <div class="fab" onclick="openUpload()">+</div>
+
+    <div id="upload-modal">
+        <div class="modal-content">
+            <h3>Publier une vidéo</h3>
+            <input type="text" id="vid-title" placeholder="Titre de la vidéo">
+            <input type="text" id="vid-url" placeholder="URL (ex: http://...mp4)">
+            <p style="font-size:0.8rem; color:#aaa;">Ou laisse vide pour vidéo test</p>
+            <button onclick="upload()">Envoyer</button>
+            <button onclick="document.getElementById('upload-modal').style.display='none'" style="background:#555">Annuler</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000/api";
+        let token = localStorage.getItem("token");
+
+        // 1. Initialisation
+        window.onload = () => {
+            if(token) {
+                document.getElementById("auth-box").style.display = "none";
+                document.getElementById("user-info").style.display = "block";
+                document.getElementById("display-name").innerText = localStorage.getItem("user");
+            }
+            loadFeed();
+        };
+
+        // 2. Connexion
+        async function login() {
+            const user = document.getElementById("username").value;
+            if(!user) return alert("Mets un pseudo !");
+            
+            const res = await fetch(`${API_URL}/login`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: user})
+            });
+            
+            const data = await res.json();
+            token = data.access_token;
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", data.username);
+            location.reload();
+        }
+
+        // 3. Charger les vidéos (LA CORRECTION EST ICI)
+        async function loadFeed() {
+            try {
+                const res = await fetch(`${API_URL}/videos`);
+                const videos = await res.json();
+                const feed = document.getElementById("feed");
+                
+                if(videos.length === 0) {
+                    feed.innerHTML = "<p style='text-align:center'>Aucune vidéo. Lance le backend pour voir les données de test !</p>";
+                    return;
+                }
+
+                feed.innerHTML = videos.map(v => {
+                    // Si c'est un chemin local, on ajoute localhost, sinon on garde l'URL
+                    const src = v.file_path.startsWith("http") ? v.file_path : `http://localhost:8000${v.file_path}`;
+                    
+                    return `
+                    <div class="card">
+                        <video class="video-player" controls preload="metadata">
+                            <source src="${src}" type="video/mp4">
+                        </video>
+                        <div class="card-body">
+                            <div class="card-title">${v.title}</div>
+                            <div class="card-meta">
+                                <span class="author-badge">${v.owner_username}</span>
+                                <span>${v.views} vues</span>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+                
+            } catch(e) {
+                document.getElementById("feed").innerHTML = "<p style='color:red'>Erreur de connexion au serveur (Verifie que uvicorn tourne)</p>";
+            }
+        }
+
+        // 4. Upload
+        function openUpload() {
+            if(!token) return alert("Connecte-toi d'abord !");
+            document.getElementById("upload-modal").style.display = "flex";
+        }
+
+        async function upload() {
+            const title = document.getElementById("vid-title").value;
+            const url = document.getElementById("vid-url").value;
+            
+            const formData = new FormData();
+            formData.append("title", title);
+            formData.append("token", token);
+            if(url) formData.append("fallback_url", url);
+
+            await fetch(`${API_URL}/videos`, {
+                method: "POST",
+                body: formData
+            });
+
+            document.getElementById("upload-modal").style.display = "none";
+            loadFeed(); // Recharger la liste
+        }
+    </script>
+</body>
+</html>
