@@ -584,7 +584,7 @@ const App = {
         }
         
         container.innerHTML = userPosts.map(post => `
-            <div class="photo-item" onclick="App.viewPost(${post.id})">
+            <div class="photo-item" onclick="App.viewPoFromfeed(${post.id})">
                 ${post.type === 'video' || post.type === 'rshort' ? 
                     `<div style="position:relative;">
                         <img src="${post.content}" alt="${post.title}">
