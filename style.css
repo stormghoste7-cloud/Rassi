@@ -895,3 +895,89 @@ body {
     width: 0%;
     transition: width 0.3s ease;
 }
+/* --- VIEWER STYLES --- */
+.viewer-transition-next {
+    animation: slideOutLeft 0.3s ease;
+}
+
+.viewer-transition-prev {
+    animation: slideOutRight 0.3s ease;
+}
+
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-100px);
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Styles pour les commentaires */
+.comment-enter {
+    animation: commentEnter 0.3s ease;
+}
+
+@keyframes commentEnter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive pour le viewer */
+@media (max-width: 768px) {
+    #post-viewer .viewer-controls {
+        padding: 15px;
+    }
+    
+    #post-viewer .viewer-side-buttons {
+        bottom: 120px;
+        right: 15px;
+    }
+    
+    #post-viewer .viewer-navigation {
+        bottom: 70px;
+        left: 15px;
+        right: 15px;
+    }
+}
