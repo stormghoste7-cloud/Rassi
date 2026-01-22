@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, desc
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy.ext.declarative import declarative_base
 from jose import jwt
 
 # --- CONFIGURATION ---
@@ -23,7 +23,7 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# --- MODÈLES ---
+# --- TABLES DE LA BASE DE DONNÉES ---
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -40,7 +40,7 @@ class Video(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="videos")
 
-# --- SCHEMAS ---
+# --- SCHÉMAS DE SORTIE (C'est ici qu'on règle le bug) ---
 class VideoOut(BaseModel):
     id: int
     title: str
@@ -48,19 +48,20 @@ class VideoOut(BaseModel):
     views: int
     owner_username: str
     created_at: datetime
+
     class Config:
-        from_attributes = True
+        # On remplace 'from_attributes' par 'orm_mode' pour assurer la compatibilité
+        orm_mode = True 
 
 class UserLogin(BaseModel):
     username: str
 
-# --- APP ---
+# --- INITIALISATION APP ---
 app = FastAPI()
 
-# IMPORTANT : Correction pour que les autres puissent se connecter
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Autorise tous les appareils (amis, mobiles)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,15 +75,20 @@ def get_db():
     try: yield db
     finally: db.close()
 
-def get_current_user(token: str, db: Session):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        user = db.query(User).filter(User.username == username).first()
-        return user
-    except: return None
-
-# --- ENDPOINTS ---
+# --- FONCTION POUR VOIR TOUTES LES PUBLICATIONS ---
+@app.get("/api/videos", response_model=List[VideoOut])
+def get_all_videos(db: Session = Depends(get_db)):
+    # On récupère absolument tout pour le réseau social
+    videos = db.query(Video).order_by(desc(Video.created_at)).all()
+    
+    results = []
+    for v in videos:
+        # On transforme l'objet de la base de données en format lisible par le site
+        # C'est ici que 'orm_mode = True' fait son travail
+        v_out = VideoOut.from_orm(v) if hasattr(VideoOut, 'from_orm') else VideoOut.model_validate(v)
+        v_out.owner_username = v.owner.username if v.owner else "Anonyme"
+        results.append(v_out)
+    return results
 
 @app.post("/api/login")
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
@@ -95,20 +101,6 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
     token = jwt.encode({"sub": user.username}, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "username": user.username}
 
-# CORRECTION : Récupération globale pour le réseau social
-@app.get("/api/videos", response_model=List[VideoOut])
-def get_all_videos(db: Session = Depends(get_db)):
-    # On récupère TOUTES les vidéos de TOUS les utilisateurs, par date
-    videos = db.query(Video).order_by(desc(Video.created_at)).all()
-    
-    results = []
-    for v in videos:
-        v_out = VideoOut.from_orm(v)
-        # On s'assure que le nom de l'auteur est bien envoyé
-        v_out.owner_username = v.owner.username if v.owner else "Anonyme"
-        results.append(v_out)
-    return results
-
 @app.post("/api/videos")
 def upload_video(
     title: str = Form(...),
@@ -117,8 +109,12 @@ def upload_video(
     file: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(token, db)
-    if not user: raise HTTPException(401, "Non connecté")
+    # On retrouve qui poste la vidéo grâce au token
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    username = payload.get("sub")
+    user = db.query(User).filter(User.username == username).first()
+    
+    if not user: raise HTTPException(401)
 
     path = fallback_url
     if file:
