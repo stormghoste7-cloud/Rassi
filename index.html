@@ -507,4 +507,21 @@
 
 </body>
 </html>
-<script src="viewer.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "TON_API_KEY",
+    authDomain: "ton-projet.firebaseapp.com",
+    databaseURL: "https://ton-projet.firebaseio.com",
+    projectId: "ton-projet",
+    storageBucket: "ton-projet.appspot.com",
+    appId: "TON_APP_ID"
+  };
+  // Initialisation
+  firebase.initializeApp(firebaseConfig);
+</script>
+
+<script src="app.js"></script>
+<script src="feed.js"></script>
