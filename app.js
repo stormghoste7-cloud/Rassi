@@ -646,4 +646,35 @@ const App = {
     viewPost(postId) {
         this.notify("Visionnage de publication en cours de développement !", "info");
     }
+    // On importe les outils nécessaires de Firebase
+import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+const db = getDatabase();
+const uploadBtn = document.getElementById('upload-btn');
+
+uploadBtn.addEventListener('click', () => {
+    const user = document.getElementById('username').value;
+    const file = document.getElementById('video-file').files[0];
+
+    if (file && user) {
+        // 1. Ici, on devrait normalement uploader le fichier sur un Cloud (ex: Cloudinary)
+        // Pour cet exemple, on imagine que tu as récupéré l'URL de la vidéo
+        const fakeVideoUrl = "URL_DE_LA_VIDEO_UPLOADÉE"; 
+
+        // 2. On enregistre les infos dans la base de données pour que les autres le voient
+        const postListRef = ref(db, 'posts');
+        const newPostRef = push(postListRef);
+        
+        set(newPostRef, {
+            username: user,
+            videoUrl: fakeVideoUrl,
+            timestamp: Date.now()
+        }).then(() => {
+            alert("Vidéo publiée ! Tes potes peuvent la voir maintenant.");
+        });
+    } else {
+        alert("Remplis ton nom et choisis une vidéo !");
+    }
+});
+
 };
