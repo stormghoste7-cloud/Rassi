@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RASSTUBE - Login</title>
+    <style>
+        /* Design inspiré de tes captures d'écran */
+        body {
+            background-color: #0d0d0d;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .auth-container {
+            background-color: #1a1a1a;
+            padding: 40px;
+            border-radius: 25px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            font-size: 3rem;
+            color: #ff4757;
+            margin-bottom: 30px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #262626;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            border-radius: 10px;
+        }
+
+        .tab-btn.active {
+            background-color: #ff4757;
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #262626;
+            border: 1px solid #333;
+            border-radius: 15px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        #main-btn {
+            width: 100%;
+            padding: 18px;
+            background: #ff4757;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+        #main-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <h1 class="logo">RASSTUBE</h1>
+
+        <div class="tabs">
+            <button id="tab-login" class="tab-btn active">CONNEXION</button>
+            <button id="tab-signup" class="tab-btn">INSCRIPTION</button>
+        </div>
+
+        <form id="auth-form">
+            <div class="input-group">
+                <input type="email" id="email" placeholder="Adresse e-mail" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Mot de passe (6+ caractères)" required>
+            </div>
+            <button type="submit" id="main-btn">REJOINDRE LE RÉSEAU</button>
+        </form>
+    </div>
+
+    <script>
+        // Logique de basculement Connexion / Inscription
+        const tabLogin = document.getElementById('tab-login');
+        const tabSignup = document.getElementById('tab-signup');
+        const mainBtn = document.getElementById('main-btn');
+        let isSignUp = false;
+
+        tabSignup.onclick = () => {
+            isSignUp = true;
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            mainBtn.innerText = "S'INSCRIRE MAINTENANT";
+        };
+
+        tabLogin.onclick = () => {
+            isSignUp = false;
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            mainBtn.innerText = "REJOINDRE LE RÉSEAU";
+        };
+
+        document.getElementById('auth-form').onsubmit = (e) => {
+            e.preventDefault();
+            const action = isSignUp ? "Inscription" : "Connexion";
+            alert(action + " demandée pour : " + document.getElementById('email').value);
+        };
+    </script>
+</body>
+</html>
